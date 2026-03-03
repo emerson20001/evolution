@@ -1,0 +1,52 @@
+services:
+  evolution-api:
+    image: evoapicloud/evolution-api:latest
+    container_name: evolution_api_sep
+    restart: unless-stopped
+    env_file:
+      - .env.evolution-separado
+    depends_on:
+      - postgres-sep
+      - redis-sep
+    ports:
+      - '8088:8080'
+    volumes:
+      - evolution_instances_sep:/evolution/instances
+    networks:
+      - evolution-net-sep
+
+  postgres-sep:
+    image: postgres:15
+    container_name: evolution_postgres_sep
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: evolution
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_sep_2026
+    volumes:
+      - evolution_postgres_data_sep:/var/lib/postgresql/data
+    networks:
+      - evolution-net-sep
+
+  redis-sep:
+    image: redis:7-alpine
+    container_name: evolution_redis_sep
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - evolution_redis_data_sep:/data
+    networks:
+      - evolution-net-sep
+
+volumes:
+  evolution_instances_sep:
+    name: evolution_instances_sep
+  evolution_postgres_data_sep:
+    name: evolution_postgres_data_sep
+  evolution_redis_data_sep:
+    name: evolution_redis_data_sep
+
+networks:
+  evolution-net-sep:
+    name: evolution-net-sep
+    driver: bridge
