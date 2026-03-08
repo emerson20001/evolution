@@ -2465,26 +2465,30 @@ export class ChatwootService {
         const waInstance = this.waMonitor.waInstances[instance.instanceName];
         if (!waInstance) return;
 
-        const now = Date.now();
-        const timeSinceLastNotification = now - (waInstance.lastConnectionNotification || 0);
+        const chatwootConfig = this.configService.get<Chatwoot>('CHATWOOT');
+        if (!chatwootConfig.CONNECTION_NOTIFICATION_ENABLED) {
+          return;
+        }
 
-        // Se a conexão foi estabelecida via QR code, notifica imediatamente.
-        if (waInstance.qrCode && waInstance.qrCode.count > 0) {
+        const dedupeKey = `${instance.instanceName}:cw:connected-notification`;
+        const ttlSeconds = chatwootConfig.CONNECTION_NOTIFICATION_TTL_SECONDS || 21600;
+        const connectedViaQr = waInstance.qrCode && waInstance.qrCode.count > 0;
+
+        // Notify on fresh QR connection, but don't flood on reconnect loops.
+        if (connectedViaQr) {
           const msgConnection = i18next.t('cw.inbox.connected');
           await this.createBotMessage(instance, msgConnection, 'incoming');
           waInstance.qrCode.count = 0;
-          waInstance.lastConnectionNotification = now;
+          await this.cache.set(dedupeKey, true, ttlSeconds);
           chatwootImport.clearAll(instance);
         }
-        // Se não foi via QR code, verifica o throttling.
-        else if (timeSinceLastNotification >= 30000) {
+        // For regular open events, use shared cache dedupe to avoid repeated bot spam.
+        else if (!(await this.cache.has(dedupeKey))) {
           const msgConnection = i18next.t('cw.inbox.connected');
           await this.createBotMessage(instance, msgConnection, 'incoming');
-          waInstance.lastConnectionNotification = now;
+          await this.cache.set(dedupeKey, true, ttlSeconds);
         } else {
-          this.logger.warn(
-            `Connection notification skipped for ${instance.instanceName} - too frequent (${timeSinceLastNotification}ms since last)`,
-          );
+          this.logger.warn(`Connection notification skipped for ${instance.instanceName} (dedupe active)`);
         }
       }
 

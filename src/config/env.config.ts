@@ -320,6 +320,8 @@ export type Chatwoot = {
   MESSAGE_DELETE: boolean;
   MESSAGE_READ: boolean;
   BOT_CONTACT: boolean;
+  CONNECTION_NOTIFICATION_ENABLED: boolean;
+  CONNECTION_NOTIFICATION_TTL_SECONDS: number;
   IMPORT: {
     DATABASE: {
       CONNECTION: {
@@ -814,6 +816,9 @@ export class ConfigService {
         MESSAGE_DELETE: process.env.CHATWOOT_MESSAGE_DELETE === 'true',
         MESSAGE_READ: process.env.CHATWOOT_MESSAGE_READ === 'true',
         BOT_CONTACT: !process.env.CHATWOOT_BOT_CONTACT || process.env.CHATWOOT_BOT_CONTACT === 'true',
+        CONNECTION_NOTIFICATION_ENABLED: process.env.CHATWOOT_CONNECTION_NOTIFICATION_ENABLED === 'true',
+        CONNECTION_NOTIFICATION_TTL_SECONDS:
+          Number.parseInt(process.env.CHATWOOT_CONNECTION_NOTIFICATION_TTL_SECONDS) || 21600,
         IMPORT: {
           DATABASE: {
             CONNECTION: {
